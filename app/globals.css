@@ -1,1 +1,303 @@
+:root {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --success-bg: #ecfdf5;
+  --success-text: #047857;
+  --error-bg: #fef2f2;
+  --error-text: #b91c1c;
+  --radius: 8px;
+}
 
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sarabun', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Navbar */
+.navbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 15px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-links a:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Layout */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+h1 {
+  font-size: 24px;
+  margin: 0 0 20px;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 0 0 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+/* Forms */
+.form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.field label {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+input,
+select {
+  font: inherit;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.25);
+  border-color: var(--primary);
+}
+
+/* Buttons */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:hover {
+  background: var(--primary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg);
+}
+
+.btn-danger {
+  background: var(--danger);
+}
+
+.btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Tables */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+th,
+td {
+  padding: 11px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+}
+
+tbody tr:hover {
+  background: #fafafa;
+}
+
+.num {
+  text-align: right;
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 12px;
+}
+
+.low-stock {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Messages */
+.message {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.message.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.message.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+/* Cart total / summary */
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.total-amount {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat {
+  display: inline-block;
+  min-width: 240px;
+}
+
+.stat .label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.stat .value {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .navbar-inner {
+    height: auto;
+    padding: 10px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .container {
+    padding-top: 20px;
+  }
+}
