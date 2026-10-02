@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// กำหนด Bot Token และ Chat ID โดยตรงในไฟล์
-const BOT_TOKEN = '8951440086:AAE57rVKCJXeJbuVqtn9g1AyhBdv71dG9rU';
-const CHAT_ID = '@webcoffeepos';
+// กำหนด Bot Token และ Chat ID
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8951440086:AAE57rVKCJXeJbuVqtn9g1AyhBdv71dG9rU';
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '@webcoffeepos';
 
 const formatMoney = (n) =>
-  Number(n).toLocaleString('th-TH', {
+  Number(n || 0).toLocaleString('th-TH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -26,33 +26,30 @@ const formatThaiDateTime = (value) => {
   });
 };
 
-// สร้างข้อความแจ้งเตือน
 function buildMessage({ productName, quantity, totalPrice, soldAt, items }) {
   const lines = ['🛒 ขายสินค้าสำเร็จ!'];
 
-  if (Array.isArray(items) && items.length > 1) {
-    lines.push('📦 สินค้า:');
+  if (Array.isArray(items) && items.length > 0) {
+    lines.push('📦 รายการสินค้า:');
     items.slice(0, 50).forEach((item) => {
       const unit = item.unit ? ` ${item.unit}` : '';
       lines.push(
-        `  • ${item.name} x ${item.quantity}${unit} = ${formatMoney(item.lineTotal)} บาท`
+        `  • ${item.name || 'สินค้า'} x ${item.quantity || 1}${unit} = ${formatMoney(item.lineTotal)} บาท`
       );
     });
-    lines.push(`จำนวนรวม: ${quantity}`);
+    if (quantity) lines.push(`จำนวนรวม: ${quantity}`);
   } else {
-    lines.push(`📦 สินค้า: ${productName}`);
-    lines.push(`จำนวน: ${quantity}`);
+    lines.push(`📦 สินค้า: ${productName || 'รายการสินค้า'}`);
+    lines.push(`จำนวน: ${quantity || 1}`);
   }
 
   lines.push(`💰 ยอดรวม: ${formatMoney(totalPrice)} บาท`);
   lines.push(`⏰ เวลา: ${formatThaiDateTime(soldAt)}`);
 
-  // Telegram จำกัดข้อความไม่เกิน 4096 ตัวอักษร
   return lines.join('\n').slice(0, 4000);
 }
 
 export async function POST(request) {
-  // อ่านและตรวจสอบข้อมูลที่ส่งมา
   let body;
   try {
     body = await request.json();
@@ -65,44 +62,29 @@ export async function POST(request) {
 
   const { productName, quantity, totalPrice, soldAt, items } = body || {};
 
-  const qtyNum = Number(quantity);
-  const totalNum = Number(totalPrice);
-
-  if (
-    typeof productName !== 'string' ||
-    !productName.trim() ||
-    Number.isNaN(qtyNum) ||
-    Number.isNaN(totalNum)
-  ) {
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'ข้อมูลไม่ครบ ต้องมี productName, quantity, totalPrice และ soldAt',
-      },
-      { status: 400 }
-    );
-  }
+  const qtyNum = Number(quantity) || (Array.isArray(items) ? items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0) : 1);
+  const totalNum = Number(totalPrice) || 0;
+  const safeProductName = String(productName || (items && items[0]?.name) || 'การขายหน้าร้าน').trim();
 
   const safeItems = Array.isArray(items)
     ? items
-        .filter((i) => i && typeof i.name === 'string')
+        .filter((i) => i && (i.name || i.productName))
         .map((i) => ({
-          name: i.name,
-          quantity: Number(i.quantity) || 0,
+          name: i.name || i.productName || 'สินค้า',
+          quantity: Number(i.quantity) || 1,
           unit: typeof i.unit === 'string' ? i.unit : '',
-          lineTotal: Number(i.lineTotal) || 0,
+          lineTotal: Number(i.lineTotal || i.price * i.quantity) || 0,
         }))
     : [];
 
   const text = buildMessage({
-    productName: productName.trim(),
+    productName: safeProductName,
     quantity: qtyNum,
     totalPrice: totalNum,
     soldAt,
     items: safeItems,
   });
 
-  // ส่งข้อความไปยัง Telegram Bot API
   try {
     const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
