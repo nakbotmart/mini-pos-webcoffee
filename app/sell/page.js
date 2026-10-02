@@ -9,6 +9,30 @@ const formatMoney = (n) =>
     maximumFractionDigits: 2,
   });
 
+// ส่งแจ้งเตือนการขายไปที่ API Route /api/telegram
+// (โยน error เมื่อส่งไม่สำเร็จ ให้ผู้เรียกจัดการเอง)
+async function sendTelegramNotification(saleItems, totalPrice, soldAt) {
+  const totalQty = saleItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  const res = await fetch('/api/telegram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      productName:
+        saleItems.length === 1 ? saleItems[0].name : `${saleItems.length} รายการ`,
+      quantity: totalQty,
+      totalPrice,
+      soldAt,
+      items: saleItems,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.status !== 'success') {
+    throw new Error(data.message || `HTTP ${res.status}`);
+  }
+}
+
 export default function SellPage() {
   const [products, setProducts] = useState([]);
   const [selectedId, setSelectedId] = useState('');
@@ -122,8 +146,12 @@ export default function SellPage() {
 
     setSubmitting(true);
 
+    // เก็บสำเนาตะกร้าและยอดรวมไว้ก่อน (ใช้ส่ง Telegram หลังล้างตะกร้า)
+    const cartSnapshot = cart.map((item) => ({ ...item }));
+    const totalSnapshot = total;
+
     // 1) ดึงสต๊อกล่าสุดจากฐานข้อมูลก่อนขาย
-    const ids = cart.map((item) => item.product_id);
+    const ids = cartSnapshot.map((item) => item.product_id);
     const { data: latest, error: fetchError } = await supabase
       .from('products')
       .select('id, name, stock')
@@ -136,7 +164,7 @@ export default function SellPage() {
     }
 
     // 2) ตรวจสอบว่าสต๊อกเพียงพอหรือไม่
-    for (const item of cart) {
+    for (const item of cartSnapshot) {
       const current = (latest || []).find((p) => p.id === item.product_id);
       if (!current) {
         window.alert(`ไม่พบสินค้า "${item.name}" ในระบบ`);
@@ -156,7 +184,7 @@ export default function SellPage() {
 
     // 3) ตัดสต๊อก (มีเงื่อนไขว่าสต๊อกต้องยังเท่าเดิม กันขายซ้อนกัน)
     const deducted = [];
-    for (const item of cart) {
+    for (const item of cartSnapshot) {
       const current = latest.find((p) => p.id === item.product_id);
       const { data: updated, error: updateError } = await supabase
         .from('products')
@@ -182,7 +210,7 @@ export default function SellPage() {
 
     // 4) บันทึกรายการขายลงตาราง sales
     const soldAt = new Date().toISOString();
-    const saleRows = cart.map((item) => ({
+    const saleRows = cartSnapshot.map((item) => ({
       product_id: item.product_id,
       product_name: item.name,
       quantity: item.quantity,
@@ -203,10 +231,28 @@ export default function SellPage() {
       return;
     }
 
-    // 5) สำเร็จ: ล้างตะกร้า + แสดงข้อความ
+    // 5) แจ้งเตือน Telegram แบบไม่บล็อกการทำงานหลัก
+    //    (ไม่ใช้ await: ถ้าส่งไม่ผ่านจะเตือนเบา ๆ แต่การขายใน Supabase สำเร็จแล้ว)
+    sendTelegramNotification(
+      cartSnapshot.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit || '',
+        lineTotal: item.price * item.quantity,
+      })),
+      totalSnapshot,
+      soldAt
+    ).catch((err) => {
+      console.error('Telegram notification failed:', err);
+      window.alert(
+        'บันทึกการขายสำเร็จแล้ว แต่ส่งแจ้งเตือน Telegram ไม่สำเร็จ\n(' + err.message + ')'
+      );
+    });
+
+    // 6) สำเร็จ: ล้างตะกร้า + แสดงข้อความ
     setMessage({
       type: 'success',
-      text: `ขายสำเร็จ ${cart.length} รายการ ยอดรวม ${formatMoney(total)} บาท`,
+      text: `ขายสำเร็จ ${cartSnapshot.length} รายการ ยอดรวม ${formatMoney(totalSnapshot)} บาท`,
     });
     setCart([]);
     await fetchProducts();
